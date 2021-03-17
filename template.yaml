@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-test
+  Sam app for demonstrate testing and concatenation
+
+Globals:
+  Function:
+    Timeout: 3
+    Handler: app.lambda_handler
+    Runtime: python3.8
+
+Resources:
+  PhaseA:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: phase_a/
+      Events:
+        PhaseA:
+          Type: Api 
+          Properties:
+            Path: /A
+            Method: get
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: Lambda
+            Destination: !GetAtt PhaseB.Arn
+  PhaseB:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: phase_b/
+      Events:
+        PhaseC:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /B
+            Method: get
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: Lambda
+            Destination: !GetAtt PhaseC.Arn
+  PhaseC:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: phase_c/
+      Events:
+        PhaseC:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /C
+            Method: get
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage for PhaseA function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/PhaseA/"
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt PhaseA.Arn
+  HelloWorldFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt PhaseARole.Arn
